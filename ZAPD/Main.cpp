@@ -658,11 +658,7 @@ int HandleExtract(ZFileMode fileMode, ExporterSet* exporterSet, std::atomic<size
 				std::vector<std::string> fileList =
 					Directory::ListFiles(Globals::Instance->inputPath.string());
 
-				const int num_threads = std::thread::hardware_concurrency();
-				ctpl::thread_pool pool(num_threads > 1 ? num_threads / 2 : 1);
-
 				bool parseSuccessful;
-
 				auto start = std::chrono::steady_clock::now();
 				size_t fileListSize = fileList.size();
 				Globals::Instance->singleThreaded = true;
@@ -677,30 +673,9 @@ int HandleExtract(ZFileMode fileMode, ExporterSet* exporterSet, std::atomic<size
 
 				for (size_t i = 0; i < fileListSize; i++)
 				{
-					if (Globals::Instance->singleThreaded)
-					{
-						ExtractFunc(i, fileList.size(), fileList[i], fileMode);
-						if (extractCount != nullptr) {
-							*extractCount = i;
-						}
-					}
-					else
-					{
-						std::string fileListItem = fileList[i];
-						pool.push([i, fileListSize, fileListItem, fileMode](int) {
-							ExtractFunc(i, fileListSize, fileListItem, fileMode);
-						});
-					}
-				}
-
-				if (!Globals::Instance->singleThreaded)
-				{
-					while (true)
-					{
-						if (numWorkersLeft <= 0)
-							break;
-
-						std::this_thread::sleep_for(std::chrono::milliseconds(250));
+					ExtractFunc(i, fileList.size(), fileList[i], fileMode);
+					if (extractCount != nullptr) {
+						*extractCount = i;
 					}
 				}
 
